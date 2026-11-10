@@ -1,9 +1,78 @@
 ﻿"use client"
 
 import Link from "next/link"
-import { adminLogout } from "@/lib/admin-api"
+import { useEffect, useState } from "react"
+import { adminLogout, getAdminOrders } from "@/lib/admin-api"
+
+type AdminOrder = {
+  id: number
+  createdAt: string
+}
+
+const NEW_ORDER_SEEN_KEY = "baltena_admin_last_seen_order"
 
 export default function AdminDashboardPage() {
+  const [newOrders, setNewOrders] = useState(0)
+
+  async function checkNewOrders() {
+    try {
+      const orders = await getAdminOrders()
+
+      if (!Array.isArray(orders) || orders.length === 0) {
+        setNewOrders(0)
+        return
+      }
+
+      const sortedOrders = [...orders].sort(
+        (a: AdminOrder, b: AdminOrder) =>
+          new Date(b.createdAt).getTime() -
+          new Date(a.createdAt).getTime()
+      )
+
+      const newestOrder = sortedOrders[0]
+
+      const savedLastSeen = localStorage.getItem(
+        NEW_ORDER_SEEN_KEY
+      )
+
+      // First time opening the dashboard:
+      // use the newest existing order as the starting point.
+      if (!savedLastSeen) {
+        localStorage.setItem(
+          NEW_ORDER_SEEN_KEY,
+          newestOrder.createdAt
+        )
+
+        setNewOrders(0)
+        return
+      }
+
+      const lastSeenTime = new Date(
+        savedLastSeen
+      ).getTime()
+
+      const unseenCount = orders.filter(
+        (order: AdminOrder) =>
+          new Date(order.createdAt).getTime() >
+          lastSeenTime
+      ).length
+
+      setNewOrders(unseenCount)
+    } catch {
+      // Keep the dashboard working even if the check fails.
+    }
+  }
+
+  useEffect(() => {
+    checkNewOrders()
+
+    const interval = setInterval(() => {
+      checkNewOrders()
+    }, 10000)
+
+    return () => clearInterval(interval)
+  }, [])
+
   return (
     <main className="admin-dashboard-page">
 
@@ -50,9 +119,34 @@ export default function AdminDashboardPage() {
           <Link
             href="/admin/orders"
             className="admin-sidebar-link"
+            style={{
+              position: "relative",
+            }}
           >
             <span className="admin-nav-icon">▰</span>
             Orders
+
+            {newOrders > 0 && (
+              <span
+                style={{
+                  marginLeft: "auto",
+                  minWidth: "22px",
+                  height: "22px",
+                  padding: "0 6px",
+                  borderRadius: "999px",
+                  background: "#dc2626",
+                  color: "#fff",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  lineHeight: 1,
+                }}
+              >
+                {newOrders > 99 ? "99+" : newOrders}
+              </span>
+            )}
           </Link>
 
         </nav>
@@ -136,7 +230,30 @@ export default function AdminDashboardPage() {
 
           </div>
 
-          <div className="admin-overview-card">
+          <div
+            className="admin-overview-card"
+            style={{
+              position: "relative",
+            }}
+          >
+
+            {newOrders > 0 && (
+              <span
+                style={{
+                  position: "absolute",
+                  top: "14px",
+                  right: "14px",
+                  background: "#dc2626",
+                  color: "#fff",
+                  borderRadius: "999px",
+                  padding: "5px 9px",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                }}
+              >
+                {newOrders} NEW
+              </span>
+            )}
 
             <div className="admin-overview-icon">
               ▰
@@ -146,7 +263,9 @@ export default function AdminDashboardPage() {
               <span>Orders</span>
               <strong>View Orders</strong>
               <small>
-                Customer orders and status
+                {newOrders > 0
+                  ? `${newOrders} new order${newOrders === 1 ? "" : "s"} waiting`
+                  : "Customer orders and status"}
               </small>
             </div>
 
@@ -241,7 +360,28 @@ export default function AdminDashboardPage() {
             <Link
               href="/admin/orders"
               className="admin-management-card"
+              style={{
+                position: "relative",
+              }}
             >
+
+              {newOrders > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "14px",
+                    right: "14px",
+                    background: "#dc2626",
+                    color: "#fff",
+                    borderRadius: "999px",
+                    padding: "5px 9px",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                  }}
+                >
+                  {newOrders} NEW
+                </span>
+              )}
 
               <div className="admin-management-card-top">
 
@@ -265,7 +405,9 @@ export default function AdminDashboardPage() {
               </p>
 
               <span className="admin-card-action">
-                Manage Orders
+                {newOrders > 0
+                  ? `View ${newOrders} New Order${newOrders === 1 ? "" : "s"}`
+                  : "Manage Orders"}
               </span>
 
             </Link>

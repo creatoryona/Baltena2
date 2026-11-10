@@ -2,6 +2,8 @@
 
 import Link from "next/link"
 import { useCart } from "@/components/CartProvider"
+import { useLanguage } from "@/context/LanguageProvider"
+import { translations } from "@/lib/translations/translations"
 
 export default function CartPage() {
   const {
@@ -9,6 +11,9 @@ export default function CartPage() {
     updateQuantity,
     removeItem,
   } = useCart()
+
+  const { language } = useLanguage()
+  const t = translations[language]
 
   const total = items.reduce(
     (sum, item) =>
@@ -25,17 +30,17 @@ export default function CartPage() {
     return (
       <main className="container cart-page">
         <div className="empty-cart">
-          <h1>Your Cart</h1>
+          <h1>{t.cart.title}</h1>
 
           <p>
-            Your cart is empty.
+            {t.cart.empty}
           </p>
 
           <Link
             href="/products"
             className="primary-button"
           >
-            Start Shopping
+            {t.cart.continueShopping}
           </Link>
         </div>
       </main>
@@ -46,14 +51,20 @@ export default function CartPage() {
     <main className="container cart-page">
       <div className="cart-header">
         <div>
-          <h1>Your Cart</h1>
+          <h1>{t.cart.title}</h1>
 
           <p>
             {totalItems}{" "}
             {totalItems === 1
-              ? "item"
-              : "items"}{" "}
-            in your cart
+              ? language === "am"
+                ? "ምርት"
+                : "item"
+              : language === "am"
+                ? "ምርቶች"
+                : "items"}{" "}
+            {language === "am"
+              ? "በጋሪዎ ውስጥ አሉ"
+              : "in your cart"}
           </p>
         </div>
 
@@ -61,20 +72,17 @@ export default function CartPage() {
           href="/products"
           className="secondary-button"
         >
-          Continue Shopping
+          {t.cart.continueShopping}
         </Link>
       </div>
 
       <div className="cart-layout">
-
         <div className="cart-items">
-
           {items.map((item) => (
             <div
               key={item.variantId}
               className="cart-item"
             >
-
               <div className="cart-item-image">
                 {item.image ? (
                   <img
@@ -83,32 +91,30 @@ export default function CartPage() {
                   />
                 ) : (
                   <span>
-                    No Image
+                    {t.products.noImage}
                   </span>
                 )}
               </div>
 
               <div className="cart-item-details">
-
                 <h2>
                   {item.productName}
                 </h2>
 
                 <p>
-                  Size:{" "}
+                  {t.products.size}:{" "}
                   <strong>
                     {item.size}
                   </strong>
                 </p>
 
                 <p className="cart-item-price">
-                  {Number(item.price).toFixed(2)} ETB
+                  {Number(item.price).toFixed(2)}{" "}
+                  {t.common.etb}
                 </p>
 
                 <div className="cart-item-actions">
-
                   <div className="quantity-control">
-
                     <button
                       type="button"
                       onClick={() =>
@@ -139,7 +145,6 @@ export default function CartPage() {
                     >
                       +
                     </button>
-
                   </div>
 
                   <button
@@ -151,11 +156,9 @@ export default function CartPage() {
                       )
                     }
                   >
-                    Remove
+                    {t.cart.remove}
                   </button>
-
                 </div>
-
               </div>
 
               <div className="cart-item-total">
@@ -163,23 +166,24 @@ export default function CartPage() {
                   Number(item.price) *
                   item.quantity
                 ).toFixed(2)}{" "}
-                ETB
+                {t.common.etb}
               </div>
-
             </div>
           ))}
-
         </div>
 
         <aside className="cart-summary">
-
           <h2>
-            Order Summary
+            {language === "am"
+              ? "የትዕዛዝ ማጠቃለያ"
+              : "Order Summary"}
           </h2>
 
           <div className="summary-row">
             <span>
-              Products
+              {language === "am"
+                ? "ምርቶች"
+                : "Products"}
             </span>
 
             <span>
@@ -189,45 +193,47 @@ export default function CartPage() {
 
           <div className="summary-row">
             <span>
-              Subtotal
+              {t.cart.subtotal}
             </span>
 
             <span>
-              {total.toFixed(2)} ETB
+              {total.toFixed(2)}{" "}
+              {t.common.etb}
             </span>
           </div>
 
           <div className="summary-row">
             <span>
-              Delivery
+              {language === "am"
+                ? "መላኪያ"
+                : "Delivery"}
             </span>
 
             <span>
-              To be arranged
+              {language === "am"
+                ? "የሚዘጋጅ"
+                : "To be arranged"}
             </span>
           </div>
 
           <div className="summary-row total-row">
-
             <strong>
-              Total
+              {t.cart.total}
             </strong>
 
             <strong>
-              {total.toFixed(2)} ETB
+              {total.toFixed(2)}{" "}
+              {t.common.etb}
             </strong>
-
           </div>
 
           <Link
             href="/checkout"
             className="primary-button checkout-button"
           >
-            Proceed to Checkout
+            {t.cart.checkout}
           </Link>
-
         </aside>
-
       </div>
     </main>
   )

@@ -5,6 +5,9 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 
 import { getProduct } from "@/lib/api"
+import {
+  isCustomerLoggedIn,
+} from "@/lib/customer-api"
 import { useCart } from "@/components/CartProvider"
 
 type Variant = {
@@ -31,24 +34,65 @@ export default function ProductPage() {
   const router = useRouter()
   const { addItem } = useCart()
 
-  const [product, setProduct] = useState<Product | null>(null)
+  const [authorized, setAuthorized] =
+    useState(false)
+
+  const [checkingAuth, setCheckingAuth] =
+    useState(true)
+
+  const [product, setProduct] =
+    useState<Product | null>(null)
+
   const [selectedVariant, setSelectedVariant] =
     useState<Variant | null>(null)
 
   const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(true)
 
+  /*
+   * Protect the product page.
+   *
+   * If the customer is not logged in,
+   * send them to Login and remember
+   * the product page they wanted.
+   */
   useEffect(() => {
+    if (!isCustomerLoggedIn()) {
+      const productUrl =
+        `/products/${String(params.id)}`
+
+      router.replace(
+        `/login?redirect=${encodeURIComponent(productUrl)}`
+      )
+
+      return
+    }
+
+    setAuthorized(true)
+    setCheckingAuth(false)
+  }, [params.id, router])
+
+  /*
+   * Only load the product after
+   * customer authentication succeeds.
+   */
+  useEffect(() => {
+    if (!authorized) return
+
     async function loadProduct() {
       try {
-        const data = await getProduct(String(params.id))
+        const data = await getProduct(
+          String(params.id)
+        )
 
         setProduct(data)
 
         if (data.variants?.length > 0) {
-          const available = data.variants.find(
-            (variant: Variant) => variant.stock > 0
-          )
+          const available =
+            data.variants.find(
+              (variant: Variant) =>
+                variant.stock > 0
+            )
 
           if (available) {
             setSelectedVariant(available)
@@ -62,7 +106,31 @@ export default function ProductPage() {
     }
 
     loadProduct()
-  }, [params.id])
+  }, [authorized, params.id])
+
+  /*
+   * While checking authentication,
+   * don't show the product.
+   */
+  if (checkingAuth) {
+    return (
+      <main className="container">
+        <p>Checking account...</p>
+      </main>
+    )
+  }
+
+  /*
+   * Prevent the product from rendering
+   * while redirecting to Login.
+   */
+  if (!authorized) {
+    return (
+      <main className="container">
+        <p>Redirecting to login...</p>
+      </main>
+    )
+  }
 
   if (loading) {
     return (

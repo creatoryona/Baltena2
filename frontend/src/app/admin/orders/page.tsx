@@ -39,6 +39,9 @@ const statuses = [
   "cancelled",
 ]
 
+const NEW_ORDER_SEEN_KEY =
+  "baltena_admin_last_seen_order"
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [selectedOrder, setSelectedOrder] =
@@ -52,7 +55,22 @@ export default function AdminOrdersPage() {
       setError("")
 
       const data = await getAdminOrders()
+
       setOrders(data)
+
+      // Mark the newest order as seen when admin opens Orders.
+      if (Array.isArray(data) && data.length > 0) {
+        const newestOrder = [...data].sort(
+          (a: Order, b: Order) =>
+            new Date(b.createdAt).getTime() -
+            new Date(a.createdAt).getTime()
+        )[0]
+
+        localStorage.setItem(
+          NEW_ORDER_SEEN_KEY,
+          newestOrder.createdAt
+        )
+      }
     } catch (err) {
       setError(
         err instanceof Error
@@ -438,7 +456,6 @@ export default function AdminOrdersPage() {
             }
           >
 
-            {/* MODAL HEADER */}
             <div className="orders-modal-header">
 
               <div>
@@ -472,7 +489,6 @@ export default function AdminOrdersPage() {
 
             </div>
 
-            {/* CUSTOMER */}
             <section className="orders-detail-section">
 
               <h3>Customer Information</h3>
@@ -503,7 +519,6 @@ export default function AdminOrdersPage() {
 
             </section>
 
-            {/* DELIVERY */}
             <section className="orders-detail-section">
 
               <h3>Delivery Location</h3>
@@ -563,7 +578,6 @@ export default function AdminOrdersPage() {
 
             </section>
 
-            {/* ITEMS */}
             <section className="orders-detail-section">
 
               <div className="orders-items-heading">
@@ -624,7 +638,6 @@ export default function AdminOrdersPage() {
 
             </section>
 
-            {/* STATUS */}
             <section className="orders-modal-status">
 
               <div>

@@ -1,10 +1,25 @@
-"use client"
+﻿"use client"
 
-import { FormEvent, useState } from "react"
+import {
+  FormEvent,
+  useEffect,
+  useState,
+} from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+
 import { useCart } from "@/components/CartProvider"
 import { createOrder } from "@/lib/api"
+
+import {
+  isCustomerLoggedIn,
+} from "@/lib/customer-api"
+
+import { useLanguage } from "@/context/LanguageProvider"
+
+import {
+  translations,
+} from "@/lib/translations/translations"
 
 const regions = [
   "Addis Ababa",
@@ -31,22 +46,90 @@ export default function CheckoutPage() {
     clearCart,
   } = useCart()
 
-  const [customerName, setCustomerName] = useState("")
-  const [phone, setPhone] = useState("")
-  const [region, setRegion] = useState("")
-  const [city, setCity] = useState("")
-  const [subCity, setSubCity] = useState("")
-  const [woreda, setWoreda] = useState("")
-  const [houseNumber, setHouseNumber] = useState("")
-  const [address, setAddress] = useState("")
-  const [note, setNote] = useState("")
+  const { language } = useLanguage()
+  const t = translations[language]
 
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [checkingAuth, setCheckingAuth] =
+    useState(true)
+
+  const [authorized, setAuthorized] =
+    useState(false)
+
+  const [customerName, setCustomerName] =
+    useState("")
+
+  const [phone, setPhone] =
+    useState("")
+
+  const [region, setRegion] =
+    useState("")
+
+  const [city, setCity] =
+    useState("")
+
+  const [subCity, setSubCity] =
+    useState("")
+
+  const [woreda, setWoreda] =
+    useState("")
+
+  const [houseNumber, setHouseNumber] =
+    useState("")
+
+  const [address, setAddress] =
+    useState("")
+
+  const [note, setNote] =
+    useState("")
+
+  const [loading, setLoading] =
+    useState(false)
+
+  const [error, setError] =
+    useState("")
+
+  useEffect(() => {
+    if (!isCustomerLoggedIn()) {
+      router.replace(
+        `/login?redirect=${encodeURIComponent("/checkout")}`
+      )
+
+      return
+    }
+
+    try {
+      const savedCustomer =
+        localStorage.getItem(
+          "baltena_customer"
+        )
+
+      if (savedCustomer) {
+        const customer =
+          JSON.parse(savedCustomer)
+
+        if (customer?.name) {
+          setCustomerName(
+            customer.name
+          )
+        }
+
+        if (customer?.phone) {
+          setPhone(customer.phone)
+        }
+      }
+    } catch {
+      // Ignore invalid saved customer data.
+    }
+
+    setAuthorized(true)
+    setCheckingAuth(false)
+  }, [router])
 
   const total = items.reduce(
     (sum, item) =>
-      sum + Number(item.price) * item.quantity,
+      sum +
+      Number(item.price) *
+        item.quantity,
     0
   )
 
@@ -61,8 +144,17 @@ export default function CheckoutPage() {
   ) {
     event.preventDefault()
 
+    if (!isCustomerLoggedIn()) {
+      router.push(
+        `/login?redirect=${encodeURIComponent("/checkout")}`
+      )
+      return
+    }
+
     if (items.length === 0) {
-      setError("Your cart is empty.")
+      setError(
+        t.cart.empty
+      )
       return
     }
 
@@ -71,20 +163,38 @@ export default function CheckoutPage() {
 
     try {
       const order = await createOrder({
-        customerName: customerName.trim(),
-        phone: phone.trim(),
+        customerName:
+          customerName.trim(),
 
-        region: region.trim(),
-        city: city.trim(),
-        subCity: subCity.trim(),
-        woreda: woreda.trim(),
-        houseNumber: houseNumber.trim(),
-        address: address.trim(),
-        note: note.trim(),
+        phone:
+          phone.trim(),
+
+        region:
+          region.trim(),
+
+        city:
+          city.trim(),
+
+        subCity:
+          subCity.trim(),
+
+        woreda:
+          woreda.trim(),
+
+        houseNumber:
+          houseNumber.trim(),
+
+        address:
+          address.trim(),
+
+        note:
+          note.trim(),
 
         items: items.map((item) => ({
-          variantId: item.variantId,
-          quantity: item.quantity,
+          variantId:
+            item.variantId,
+          quantity:
+            item.quantity,
         })),
       })
 
@@ -99,27 +209,72 @@ export default function CheckoutPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "Failed to place order"
+          : language === "am"
+            ? "ትዕዛዙን መላክ አልተቻለም።"
+            : "Failed to place order"
       )
     } finally {
       setLoading(false)
     }
   }
 
+  if (checkingAuth) {
+    return (
+      <main className="container checkout-page">
+        <div className="empty-cart">
+          <h1>
+            {language === "am"
+              ? "መለያዎን በመፈተሽ ላይ..."
+              : "Checking your account..."}
+          </h1>
+
+          <p>
+            {language === "am"
+              ? "እባክዎ መለያዎን እስክናረጋግጥ ይጠብቁ።"
+              : "Please wait while we verify your account."}
+          </p>
+        </div>
+      </main>
+    )
+  }
+
+  if (!authorized) {
+    return (
+      <main className="container checkout-page">
+        <div className="empty-cart">
+          <h1>
+            {language === "am"
+              ? "ወደ መግቢያ በመላክ ላይ..."
+              : "Redirecting to login..."}
+          </h1>
+        </div>
+      </main>
+    )
+  }
+
   if (items.length === 0) {
     return (
       <main className="container checkout-page">
         <div className="empty-cart">
-          <h1>Your Cart Is Empty</h1>
+          <h1>
+            {language === "am"
+              ? "የግዢ ጋሪዎ ባዶ ነው"
+              : "Your Cart Is Empty"}
+          </h1>
+
           <p>
-            Add products to your cart before checkout.
+            {language === "am"
+              ? "ከትዕዛዝ ማጠናቀቂያ በፊት ምርቶችን ወደ ጋሪዎ ይጨምሩ።"
+              : "Add products to your cart before checkout."}
           </p>
 
           <Link
             href="/products"
             className="primary-button"
           >
-            Browse Products
+            {language === "am"
+              ? "ምርቶችን ይመልከቱ"
+              : "Browse Products"}
           </Link>
         </div>
       </main>
@@ -129,10 +284,14 @@ export default function CheckoutPage() {
   return (
     <main className="container checkout-page">
       <div className="checkout-header">
-        <h1>Checkout</h1>
+        <h1>
+          {t.checkout.title}
+        </h1>
+
         <p>
-          Enter your information and delivery
-          location.
+          {language === "am"
+            ? "መረጃዎን እና የመላኪያ አድራሻዎን ያስገቡ።"
+            : "Enter your information and delivery location."}
         </p>
       </div>
 
@@ -142,11 +301,15 @@ export default function CheckoutPage() {
           onSubmit={handleSubmit}
         >
           <section className="checkout-section">
-            <h2>Customer Information</h2>
+            <h2>
+              {t.checkout.customerInformation}
+            </h2>
 
             <div className="form-group">
               <label htmlFor="customerName">
-                Full Name *
+                {language === "am"
+                  ? "ሙሉ ስም *"
+                  : "Full Name *"}
               </label>
 
               <input
@@ -154,16 +317,23 @@ export default function CheckoutPage() {
                 type="text"
                 value={customerName}
                 onChange={(e) =>
-                  setCustomerName(e.target.value)
+                  setCustomerName(
+                    e.target.value
+                  )
                 }
-                placeholder="Enter your full name"
+                placeholder={
+                  language === "am"
+                    ? "ሙሉ ስምዎን ያስገቡ"
+                    : "Enter your full name"
+                }
+                autoComplete="name"
                 required
               />
             </div>
 
             <div className="form-group">
               <label htmlFor="phone">
-                Phone Number *
+                {t.checkout.phone} *
               </label>
 
               <input
@@ -171,32 +341,43 @@ export default function CheckoutPage() {
                 type="tel"
                 value={phone}
                 onChange={(e) =>
-                  setPhone(e.target.value)
+                  setPhone(
+                    e.target.value
+                  )
                 }
-                placeholder="09xxxxxxxx or +251..."
+                placeholder="09xxxxxxxx / +251..."
+                autoComplete="tel"
                 required
               />
             </div>
           </section>
 
           <section className="checkout-section">
-            <h2>Ethiopian Delivery Location</h2>
+            <h2>
+              {language === "am"
+                ? "የኢትዮጵያ የመላኪያ አድራሻ"
+                : "Ethiopian Delivery Location"}
+            </h2>
 
             <div className="form-group">
               <label htmlFor="region">
-                Region *
+                {t.checkout.region} *
               </label>
 
               <select
                 id="region"
                 value={region}
                 onChange={(e) =>
-                  setRegion(e.target.value)
+                  setRegion(
+                    e.target.value
+                  )
                 }
                 required
               >
                 <option value="">
-                  Select your region
+                  {language === "am"
+                    ? "ክልልዎን ይምረጡ"
+                    : "Select your region"}
                 </option>
 
                 {regions.map((item) => (
@@ -213,7 +394,7 @@ export default function CheckoutPage() {
             <div className="form-grid">
               <div className="form-group">
                 <label htmlFor="city">
-                  City *
+                  {t.checkout.city} *
                 </label>
 
                 <input
@@ -221,16 +402,22 @@ export default function CheckoutPage() {
                   type="text"
                   value={city}
                   onChange={(e) =>
-                    setCity(e.target.value)
+                    setCity(
+                      e.target.value
+                    )
                   }
-                  placeholder="e.g. Addis Ababa"
+                  placeholder={
+                    language === "am"
+                      ? "ለምሳሌ፦ አዲስ አበባ"
+                      : "e.g. Addis Ababa"
+                  }
                   required
                 />
               </div>
 
               <div className="form-group">
                 <label htmlFor="subCity">
-                  Sub-city / Town
+                  {t.checkout.subCity}
                 </label>
 
                 <input
@@ -238,9 +425,15 @@ export default function CheckoutPage() {
                   type="text"
                   value={subCity}
                   onChange={(e) =>
-                    setSubCity(e.target.value)
+                    setSubCity(
+                      e.target.value
+                    )
                   }
-                  placeholder="e.g. Bole"
+                  placeholder={
+                    language === "am"
+                      ? "ለምሳሌ፦ ቦሌ"
+                      : "e.g. Bole"
+                  }
                 />
               </div>
             </div>
@@ -248,7 +441,7 @@ export default function CheckoutPage() {
             <div className="form-grid">
               <div className="form-group">
                 <label htmlFor="woreda">
-                  Woreda
+                  {t.checkout.woreda}
                 </label>
 
                 <input
@@ -256,15 +449,21 @@ export default function CheckoutPage() {
                   type="text"
                   value={woreda}
                   onChange={(e) =>
-                    setWoreda(e.target.value)
+                    setWoreda(
+                      e.target.value
+                    )
                   }
-                  placeholder="Woreda number/name"
+                  placeholder={
+                    language === "am"
+                      ? "የወረዳ ቁጥር/ስም"
+                      : "Woreda number/name"
+                  }
                 />
               </div>
 
               <div className="form-group">
                 <label htmlFor="houseNumber">
-                  House / Building / Office No.
+                  {t.checkout.houseNumber}
                 </label>
 
                 <input
@@ -272,41 +471,57 @@ export default function CheckoutPage() {
                   type="text"
                   value={houseNumber}
                   onChange={(e) =>
-                    setHouseNumber(e.target.value)
+                    setHouseNumber(
+                      e.target.value
+                    )
                   }
-                  placeholder="House or building number"
+                  placeholder={
+                    language === "am"
+                      ? "የቤት ወይም የህንፃ ቁጥር"
+                      : "House or building number"
+                  }
                 />
               </div>
             </div>
 
             <div className="form-group">
               <label htmlFor="address">
-                Additional Address
+                {t.checkout.address}
               </label>
 
               <textarea
                 id="address"
                 value={address}
                 onChange={(e) =>
-                  setAddress(e.target.value)
+                  setAddress(
+                    e.target.value
+                  )
                 }
-                placeholder="Street, landmark, area, building name..."
+                placeholder={
+                  language === "am"
+                    ? "መንገድ፣ መለያ ቦታ፣ አካባቢ፣ የህንፃ ስም..."
+                    : "Street, landmark, area, building name..."
+                }
                 rows={3}
               />
             </div>
 
             <div className="form-group">
               <label htmlFor="note">
-                Delivery Note
+                {t.checkout.note}
               </label>
 
               <textarea
                 id="note"
                 value={note}
                 onChange={(e) =>
-                  setNote(e.target.value)
+                  setNote(
+                    e.target.value
+                  )
                 }
-                placeholder="Anything the delivery person should know?"
+                placeholder={
+                  t.checkout.notePlaceholder
+                }
                 rows={3}
               />
             </div>
@@ -324,19 +539,21 @@ export default function CheckoutPage() {
             disabled={loading}
           >
             {loading
-              ? "Placing Order..."
-              : "Place Order"}
+              ? t.checkout.placingOrder
+              : t.checkout.placeOrder}
           </button>
 
           <p className="payment-note">
-            No online payment is required.
-            We will contact you using the phone
-            number provided.
+            {language === "am"
+              ? "የመስመር ላይ ክፍያ አያስፈልግም። በሰጡት ስልክ ቁጥር እናገኝዎታለን።"
+              : "No online payment is required. We will contact you using the phone number provided."}
           </p>
         </form>
 
         <aside className="checkout-summary">
-          <h2>Order Summary</h2>
+          <h2>
+            {t.checkout.orderSummary}
+          </h2>
 
           {items.map((item) => (
             <div
@@ -349,7 +566,8 @@ export default function CheckoutPage() {
                 </strong>
 
                 <p>
-                  Size: {item.size} ×{" "}
+                  {t.products.size}:{" "}
+                  {item.size} ×{" "}
                   {item.quantity}
                 </p>
               </div>
@@ -359,32 +577,56 @@ export default function CheckoutPage() {
                   Number(item.price) *
                   item.quantity
                 ).toFixed(2)}{" "}
-                ETB
+                {t.common.etb}
               </span>
             </div>
           ))}
 
           <div className="summary-row">
-            <span>Products</span>
-            <span>{totalItems}</span>
-          </div>
-
-          <div className="summary-row">
-            <span>Subtotal</span>
             <span>
-              {total.toFixed(2)} ETB
+              {language === "am"
+                ? "ምርቶች"
+                : "Products"}
+            </span>
+
+            <span>
+              {totalItems}
             </span>
           </div>
 
           <div className="summary-row">
-            <span>Delivery</span>
-            <span>To be arranged</span>
+            <span>
+              {t.cart.subtotal}
+            </span>
+
+            <span>
+              {total.toFixed(2)}{" "}
+              {t.common.etb}
+            </span>
+          </div>
+
+          <div className="summary-row">
+            <span>
+              {language === "am"
+                ? "መላኪያ"
+                : "Delivery"}
+            </span>
+
+            <span>
+              {language === "am"
+                ? "የሚዘጋጅ"
+                : "To be arranged"}
+            </span>
           </div>
 
           <div className="summary-row total-row">
-            <strong>Total</strong>
             <strong>
-              {total.toFixed(2)} ETB
+              {t.cart.total}
+            </strong>
+
+            <strong>
+              {total.toFixed(2)}{" "}
+              {t.common.etb}
             </strong>
           </div>
         </aside>
