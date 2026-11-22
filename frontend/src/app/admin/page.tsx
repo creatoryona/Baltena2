@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
@@ -85,8 +85,8 @@ export default function AdminDashboardPage() {
           </div>
 
           <div>
-            <strong>Baltena</strong>
-            <span>Market Admin</span>
+            <strong>Bealtena</strong>
+            <span>Admin Panel</span>
           </div>
         </div>
 
@@ -182,7 +182,7 @@ export default function AdminDashboardPage() {
             <h1>Dashboard</h1>
 
             <p>
-              Welcome back. Manage your Baltena Market store.
+              Welcome back. Manage your Bealtena store.
             </p>
           </div>
 

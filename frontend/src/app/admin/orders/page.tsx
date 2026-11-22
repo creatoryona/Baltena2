@@ -1,6 +1,7 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import {
   getAdminOrders,
   updateOrderStatus,
@@ -30,6 +31,11 @@ type Order = {
   total: string | number
   createdAt: string
   items: OrderItem[]
+  customer?: {
+    id: number
+    name: string
+    email: string
+  } | null
 }
 
 const statuses = [
@@ -158,7 +164,9 @@ export default function AdminOrdersPage() {
 
         <div>
           <div className="orders-breadcrumb">
-            Admin / Orders
+            <Link href="/admin">Dashboard</Link>
+            <span>/</span>
+            <strong>Orders</strong>
           </div>
 
           <h1>Orders</h1>
@@ -168,13 +176,23 @@ export default function AdminOrdersPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          className="orders-refresh-button"
-          onClick={loadOrders}
-        >
-          ↻ Refresh
-        </button>
+        <div className="orders-header-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <Link
+            href="/admin"
+            className="orders-refresh-button"
+            style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "4px" }}
+          >
+            ← Back to Dashboard
+          </Link>
+
+          <button
+            type="button"
+            className="orders-refresh-button"
+            onClick={loadOrders}
+          >
+            ↻ Refresh
+          </button>
+        </div>
 
       </div>
 

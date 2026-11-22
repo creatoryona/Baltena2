@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import {
   FormEvent,
@@ -61,6 +61,9 @@ export default function CheckoutPage() {
   const [phone, setPhone] =
     useState("")
 
+  const [customerId, setCustomerId] =
+    useState<number | undefined>(undefined)
+
   const [region, setRegion] =
     useState("")
 
@@ -116,6 +119,10 @@ export default function CheckoutPage() {
         if (customer?.phone) {
           setPhone(customer.phone)
         }
+
+        if (customer?.id) {
+          setCustomerId(customer.id)
+        }
       }
     } catch {
       // Ignore invalid saved customer data.
@@ -168,6 +175,8 @@ export default function CheckoutPage() {
 
         phone:
           phone.trim(),
+
+        customerId,
 
         region:
           region.trim(),

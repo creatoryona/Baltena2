@@ -1,4 +1,4 @@
-﻿import {
+import {
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -215,6 +215,85 @@ export class AuthService {
         name: customer.name,
         email: customer.email,
       },
+    }
+  }
+
+  async updateProfile(customerId: number, data: { name: string; email: string }) {
+    const cleanName = data.name.trim()
+    const cleanEmail = data.email.trim().toLowerCase()
+
+    if (!cleanName) {
+      throw new ConflictException("Name cannot be empty")
+    }
+    if (!cleanEmail) {
+      throw new ConflictException("Email cannot be empty")
+    }
+
+    const existingCustomer = await this.prisma.customer.findUnique({
+      where: { email: cleanEmail },
+    })
+
+    if (existingCustomer && existingCustomer.id !== customerId) {
+      throw new ConflictException("Email already in use by another account")
+    }
+
+    const updated = await this.prisma.customer.update({
+      where: { id: customerId },
+      data: {
+        name: cleanName,
+        email: cleanEmail,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    })
+
+    return {
+      message: "Profile updated successfully",
+      customer: updated,
+    }
+  }
+
+  async changePassword(
+    customerId: number,
+    data: { currentPassword: string; newPassword: string },
+  ) {
+    if (!data.currentPassword || !data.newPassword) {
+      throw new ConflictException("Both current and new password are required")
+    }
+
+    if (data.newPassword.length < 6) {
+      throw new ConflictException("New password must be at least 6 characters")
+    }
+
+    const customer = await this.prisma.customer.findUnique({
+      where: { id: customerId },
+    })
+
+    if (!customer) {
+      throw new UnauthorizedException("Customer not found")
+    }
+
+    const isMatch = await bcrypt.compare(
+      data.currentPassword,
+      customer.password,
+    )
+
+    if (!isMatch) {
+      throw new UnauthorizedException("Current password is incorrect")
+    }
+
+    const hashedPassword = await bcrypt.hash(data.newPassword, 10)
+
+    await this.prisma.customer.update({
+      where: { id: customerId },
+      data: { password: hashedPassword },
+    })
+
+    return {
+      message: "Password changed successfully",
     }
   }
 }

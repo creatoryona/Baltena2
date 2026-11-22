@@ -6,11 +6,14 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Req,
   UseGuards,
 } from "@nestjs/common"
 import { OrdersService } from "./orders.service.js"
 import { CreateOrderDto } from "./dto/create-order.dto.js"
 import { AdminAuthGuard } from "../auth/admin-auth.guard.js"
+import { CustomerAuthGuard } from "../auth/customer-auth.guard.js"
+import type { AuthRequest } from "../auth/customer-auth.guard.js"
 
 @Controller("orders")
 export class OrdersController {
@@ -19,6 +22,14 @@ export class OrdersController {
   @Post()
   create(@Body() data: CreateOrderDto) {
     return this.ordersService.create(data)
+  }
+
+  @Get("my-orders")
+  @UseGuards(CustomerAuthGuard)
+  findMyOrders(@Req() req: AuthRequest) {
+    const customerId = req.user?.sub
+    if (!customerId) return []
+    return this.ordersService.findByCustomer(customerId)
   }
 
   @Get()

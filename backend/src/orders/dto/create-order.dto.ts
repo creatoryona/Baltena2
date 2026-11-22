@@ -29,6 +29,10 @@ export class CreateOrderDto {
   phone: string
 
   @IsOptional()
+  @IsInt()
+  customerId?: number
+
+  @IsOptional()
   @IsString()
   region?: string
 

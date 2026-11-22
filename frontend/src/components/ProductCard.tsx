@@ -1,24 +1,11 @@
-﻿"use client"
+"use client"
 
 import { useRouter } from "next/navigation"
 import {
   isCustomerLoggedIn,
 } from "@/lib/customer-api"
-
-type Variant = {
-  id: number
-  size: string
-  price: string | number
-  stock: number
-}
-
-type Product = {
-  id: number
-  name: string
-  description?: string
-  image?: string
-  variants?: Variant[]
-}
+import type { Product } from "@/lib/types"
+import { getFullImageUrl } from "@/lib/image-url"
 
 export default function ProductCard({
   product,
@@ -73,12 +60,24 @@ export default function ProductCard({
         <div className="product-card-image">
           {product.image ? (
             <img
-              src={product.image}
+              src={getFullImageUrl(product.image)}
               alt={product.name}
+              onError={(e) => {
+                const target = e.currentTarget
+                target.style.display = "none"
+                const parent = target.parentElement
+                if (parent && !parent.querySelector(".product-image-placeholder")) {
+                  const fallback = document.createElement("div")
+                  fallback.className = "product-image-placeholder"
+                  fallback.innerHTML = `<span>📦</span><small>No Image</small>`
+                  parent.appendChild(fallback)
+                }
+              }}
             />
           ) : (
             <div className="product-image-placeholder">
-              No Image
+              <span>📦</span>
+              <small>No Image</small>
             </div>
           )}
         </div>

@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import {
   useEffect,
@@ -161,7 +161,7 @@ export default function ProductEditorPage() {
       const fullImageUrl =
         result.url.startsWith("http")
           ? result.url
-          : `http://localhost:3000${result.url}`
+          : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}${result.url}`
 
       setImage(fullImageUrl)
     } catch (err) {

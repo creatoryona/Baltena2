@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common"
@@ -8,8 +8,25 @@ import { PrismaService } from "../prisma/prisma.service.js"
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll() {
+  async findAll(filters?: { categorySlug?: string; search?: string }) {
+    const where: any = {}
+
+    if (filters?.categorySlug) {
+      where.category = {
+        slug: filters.categorySlug,
+      }
+    }
+
+    if (filters?.search?.trim()) {
+      const q = filters.search.trim()
+      where.OR = [
+        { name: { contains: q, mode: "insensitive" } },
+        { description: { contains: q, mode: "insensitive" } },
+      ]
+    }
+
     return this.prisma.product.findMany({
+      where: Object.keys(where).length > 0 ? where : undefined,
       include: {
         category: true,
         variants: true,

@@ -1,8 +1,9 @@
-﻿"use client"
+"use client"
 
 import {
   FormEvent,
   Suspense,
+  useEffect,
   useState,
 } from "react"
 import {
@@ -15,6 +16,7 @@ import {
   customerLogin,
   customerRegister,
 } from "@/lib/customer-api"
+import { adminLogin } from "@/lib/admin-api"
 
 import { useLanguage } from "@/context/LanguageProvider"
 
@@ -35,10 +37,17 @@ function LoginForm() {
 
   const redirect =
     searchParams.get("redirect") || "/"
+  const requestedRole =
+    searchParams.get("role") === "admin"
+      ? "admin"
+      : "customer"
 
   const [mode, setMode] = useState<
     "login" | "register"
   >("login")
+  const [role, setRole] = useState<
+    "customer" | "admin"
+  >(requestedRole)
 
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -47,6 +56,22 @@ function LoginForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [message, setMessage] = useState("")
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hasAdminSession = Boolean(
+        localStorage.getItem("baltena_admin_token"),
+      )
+
+      if (requestedRole === "admin" && hasAdminSession) {
+        router.replace("/admin")
+        return
+      }
+    }
+
+    setRole(requestedRole)
+    setMode("login")
+  }, [requestedRole, router])
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
@@ -58,6 +83,18 @@ function LoginForm() {
     setLoading(true)
 
     try {
+      if (role === "admin") {
+        if (mode === "register") {
+          setError("Admin accounts cannot be registered here.")
+          return
+        }
+
+        await adminLogin(email.trim(), password)
+        router.push("/admin")
+        router.refresh()
+        return
+      }
+
       if (mode === "register") {
         await customerRegister(
           name.trim(),
@@ -76,7 +113,6 @@ function LoginForm() {
         password,
       )
 
-      // Admin goes to admin dashboard.
       if (data.role === "admin") {
         router.push("/admin")
         router.refresh()
@@ -84,8 +120,6 @@ function LoginForm() {
         return
       }
 
-      // Customer goes back to the page
-      // they originally wanted to visit.
       router.push(redirect)
       router.refresh()
     } catch (err) {
@@ -102,6 +136,13 @@ function LoginForm() {
   }
 
   function switchMode() {
+    if (role === "admin") {
+      setMode("login")
+      setError("")
+      setMessage("")
+      return
+    }
+
     setError("")
     setMessage("")
 
@@ -123,14 +164,30 @@ function LoginForm() {
   }
 
   return (
-    <main className="login-page">
+    <main
+      className="login-page"
+      style={{
+        backgroundImage:
+          'url("/login-background.png?v=20261118")',
+        backgroundSize: "cover",
+        backgroundPosition: "center center",
+        backgroundRepeat: "no-repeat",
+        backgroundColor: "#f7f6f2",
+      }}
+    >
       <header className="login-header">
         <div className="login-header-inner">
           <Link
             href="/"
             className="login-logo"
           >
-            Baltena Market
+            <img
+              src="/login-logo.png"
+              alt="Bealtena Logo"
+              className="login-logo-image"
+            />
+
+            <span>Bealtena</span>
           </Link>
 
           <div
@@ -154,33 +211,71 @@ function LoginForm() {
 
       <section className="login-content">
         <div className="login-wrapper">
+          <div className="login-badge-logo">
+            <img
+              src="/login-logo.png"
+              alt="Bealtena Traditional Ethiopian Provisions"
+              className="login-card-logo"
+            />
+          </div>
+
           <div className="login-heading">
             <h1>
-              {mode === "login"
-                ? t.auth.login
-                : t.auth.register}
+              {role === "admin"
+                ? "Admin Login"
+                : mode === "login"
+                  ? t.auth.login
+                  : t.auth.register}
             </h1>
 
             <p>
-              {mode === "login"
-                ? language === "am"
-                  ? "ወደ ባልትና ማርኬት ለመቀጠል ይግቡ።"
-                  : "Sign in to continue to Baltena Market."
-                : language === "am"
-                  ? "የባልትና ማርኬት የደንበኛ መለያዎን ይፍጠሩ።"
-                  : "Create your Baltena Market customer account."}
+              {role === "admin"
+                ? "Sign in to the Bealtena admin dashboard."
+                : mode === "login"
+                  ? language === "am"
+                    ? "ወደ ባልትና ወጤቶች ለመቀጠል ይግቡ።"
+                    : "Sign in to continue to Bealtena."
+                  : language === "am"
+                    ? "የባልትና ወጤቶች የደንበኛ መለያዎን ይፍጠሩ።"
+                    : "Create your Bealtena customer account."}
             </p>
           </div>
 
           <div className="login-card">
+            <div className="login-role-switch">
+              <button
+                type="button"
+                className={`login-role-option ${role === "customer" ? "is-active" : ""}`}
+                onClick={() => {
+                  setRole("customer")
+                  setMode("login")
+                  setError("")
+                  setMessage("")
+                }}
+              >
+                Customer
+              </button>
+              <button
+                type="button"
+                className={`login-role-option ${role === "admin" ? "is-active" : ""}`}
+                onClick={() => {
+                  setRole("admin")
+                  setMode("login")
+                  setError("")
+                  setMessage("")
+                }}
+              >
+                Admin
+              </button>
+            </div>
             {error && (
-              <div className="login-error">
+              <div className="login-error" role="alert">
                 {error}
               </div>
             )}
 
             {message && (
-              <div className="login-message">
+              <div className="login-message" role="status">
                 {message}
               </div>
             )}
@@ -188,8 +283,9 @@ function LoginForm() {
             <form
               onSubmit={handleSubmit}
               className="login-form"
+              aria-busy={loading}
             >
-              {mode === "register" && (
+              {role === "customer" && mode === "register" && (
                 <div className="login-field">
                   <label htmlFor="name">
                     {t.auth.name}
@@ -209,6 +305,7 @@ function LoginForm() {
                     }
                     autoComplete="name"
                     required
+                    disabled={loading}
                   />
                 </div>
               )}
@@ -228,6 +325,7 @@ function LoginForm() {
                   placeholder="you@example.com"
                   autoComplete="email"
                   required
+                  disabled={loading}
                 />
               </div>
 
@@ -237,7 +335,7 @@ function LoginForm() {
                     {t.auth.password}
                   </label>
 
-                  {mode === "login" && (
+                  {role === "customer" && mode === "login" && (
                     <button
                       type="button"
                       className="login-forgot"
@@ -271,6 +369,7 @@ function LoginForm() {
                   }
                   required
                   minLength={6}
+                  disabled={loading}
                 />
               </div>
 
@@ -278,38 +377,43 @@ function LoginForm() {
                 type="submit"
                 className="login-submit"
                 disabled={loading}
+                aria-busy={loading}
               >
                 {loading
                   ? language === "am"
                     ? "እባክዎ ይጠብቁ..."
                     : "Please wait..."
-                  : mode === "login"
-                    ? t.auth.loginButton
-                    : t.auth.registerButton}
+                  : role === "admin"
+                    ? "Admin Login"
+                    : mode === "login"
+                      ? t.auth.loginButton
+                      : t.auth.registerButton}
               </button>
             </form>
 
-            <div className="login-switch">
-              <p>
-                {mode === "login"
-                  ? t.auth.noAccount
-                  : t.auth.haveAccount}
-
-                <button
-                  type="button"
-                  onClick={switchMode}
-                >
+            {role === "customer" && (
+              <div className="login-switch">
+                <p>
                   {mode === "login"
-                    ? t.auth.createAccount
-                    : t.auth.loginHere}
-                </button>
-              </p>
-            </div>
+                    ? t.auth.noAccount
+                    : t.auth.haveAccount}
+
+                  <button
+                    type="button"
+                    onClick={switchMode}
+                  >
+                    {mode === "login"
+                      ? t.auth.createAccount
+                      : t.auth.loginHere}
+                  </button>
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="login-footer">
             <p>
-              Baltena Market
+              Bealtena · Traditional Ethiopian Provisions
             </p>
           </div>
         </div>

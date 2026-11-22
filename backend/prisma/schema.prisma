@@ -20,12 +20,14 @@ model Customer {
   email     String   @unique
   password  String
   createdAt DateTime @default(now())
+  orders    Order[]
 }
 
 model Category {
   id        Int       @id @default(autoincrement())
   name      String
   slug      String    @unique
+  image     String?
   createdAt DateTime  @default(now())
   products  Product[]
 }
@@ -65,6 +67,9 @@ model Order {
   houseNumber  String?
   address      String?
   note         String?
+
+  customerId   Int?
+  customer     Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   status       String      @default("pending")
   total        Decimal     @db.Decimal(10, 2)

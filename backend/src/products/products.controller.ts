@@ -1,4 +1,4 @@
-﻿import {
+import {
   Body,
   Controller,
   Delete,
@@ -7,6 +7,7 @@
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from "@nestjs/common"
 import { ProductsService } from "./products.service.js"
@@ -19,8 +20,14 @@ export class ProductsController {
   ) {}
 
   @Get()
-  findAll() {
-    return this.productsService.findAll()
+  findAll(
+    @Query("category") category?: string,
+    @Query("search") search?: string,
+  ) {
+    return this.productsService.findAll({
+      categorySlug: category,
+      search: search,
+    })
   }
 
   @Get(":id")

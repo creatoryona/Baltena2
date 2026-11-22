@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "backend-temp",
   "version": "0.0.1",
   "description": "",
@@ -7,11 +7,12 @@
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
+    "seed": "node --loader ts-node/esm prisma/seed.ts",
     "build": "prisma generate && nest build",
     "deploy": "nest deploy",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
-    "start:dev": "nest start --watch",
+    "start:dev": "kill-port 4000 && nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "oxlint --type-aware src/ test/",
@@ -21,6 +22,9 @@
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "postinstall": "prisma skills sync || exit 0"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
@@ -56,6 +60,7 @@
     "@types/pg": "^8.23.1",
     "@types/supertest": "^7.0.0",
     "@vitest/coverage-v8": "^4.1.2",
+    "cross-port-killer": "^1.4.0",
     "oxlint": "^1.58.0",
     "oxlint-tsgolint": "^7.0.2001",
     "prettier": "^3.4.2",
@@ -67,4 +72,3 @@
     "vitest": "^4.1.2"
   }
 }
-

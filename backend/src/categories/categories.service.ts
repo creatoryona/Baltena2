@@ -1,4 +1,4 @@
-﻿import { Injectable } from "@nestjs/common"
+import { Injectable } from "@nestjs/common"
 import { PrismaService } from "../prisma/prisma.service.js"
 
 @Injectable()
@@ -33,7 +33,7 @@ export class CategoriesService {
     })
   }
 
-  create(data: { name: string; slug: string }) {
+  create(data: { name: string; slug: string; image?: string }) {
     return this.prisma.category.create({
       data,
     })
@@ -44,6 +44,7 @@ export class CategoriesService {
     data: {
       name?: string
       slug?: string
+      image?: string
     },
   ) {
     return this.prisma.category.update({

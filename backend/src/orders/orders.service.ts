@@ -12,6 +12,7 @@ export class OrdersService {
   async create(data: {
     customerName: string
     phone: string
+    customerId?: number
     region?: string
     city?: string
     subCity?: string
@@ -91,7 +92,9 @@ export class OrdersService {
     })
 
     const orderNumber =
-      "BM-" + Date.now().toString().slice(-8)
+      "BM-" +
+      Date.now().toString(36).toUpperCase() +
+      Math.random().toString(36).slice(2, 6).toUpperCase()
 
     const order = await this.prisma.$transaction(async (tx) => {
       const createdOrder = await tx.order.create({
@@ -99,6 +102,8 @@ export class OrdersService {
           orderNumber,
           customerName: data.customerName.trim(),
           phone: data.phone.trim(),
+
+          customerId: data.customerId ?? null,
 
           region: data.region?.trim() || null,
           city: data.city?.trim() || null,
@@ -143,10 +148,31 @@ export class OrdersService {
     return order
   }
 
+  async findByCustomer(customerId: number) {
+    return this.prisma.order.findMany({
+      where: {
+        customerId,
+      },
+      include: {
+        items: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    })
+  }
+
   async findAll() {
     return this.prisma.order.findMany({
       include: {
         items: true,
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -161,6 +187,13 @@ export class OrdersService {
       },
       include: {
         items: true,
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
       },
     })
 

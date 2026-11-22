@@ -1,12 +1,15 @@
-﻿import Link from "next/link"
+import Link from "next/link"
 import { getProducts } from "@/lib/api"
 import ProductCard from "@/components/ProductCard"
+import AuthGate from "@/components/AuthGate"
+import type { Product } from "@/lib/types"
 
 export default async function HomePage() {
-  const products = await getProducts()
+  const products: Product[] = await getProducts()
 
   return (
-    <main className="home-page">
+    <AuthGate>
+      <main className="home-page">
 
       {/* HERO */}
       <section className="home-hero">
@@ -96,7 +99,7 @@ export default async function HomePage() {
 
           {products.length > 0 ? (
             <div className="product-grid">
-              {products.slice(0, 6).map((product: any) => (
+              {products.slice(0, 6).map((product: Product) => (
                 <ProductCard
                   key={product.id}
                   product={product}
@@ -228,7 +231,12 @@ export default async function HomePage() {
                 href="/"
                 className="bm-footer-logo"
               >
-                Baltena Market
+                <img
+                  src="/logo.jpg"
+                  alt="Bealtena Logo"
+                  className="bm-footer-logo-image"
+                />
+                <span>Bealtena</span>
               </Link>
 
               <p className="bm-footer-description">
@@ -243,7 +251,7 @@ export default async function HomePage() {
               <div className="bm-footer-social">
 
                 <a
-                  href="https://wa.me/251925792929"
+                  href="https://wa.me/251963574435"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bm-social-button bm-whatsapp"
@@ -259,13 +267,13 @@ export default async function HomePage() {
 
                   <span className="bm-social-text">
                     <strong>WhatsApp</strong>
-                    <small>+251 925 792 929</small>
+                    <small>+251 963 574 435</small>
                   </span>
                 </a>
 
 
                 <a
-                  href="https://t.me/Summer1444"
+                  href="https://t.me/creatoryona"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bm-social-button bm-telegram"
@@ -281,7 +289,7 @@ export default async function HomePage() {
 
                   <span className="bm-social-text">
                     <strong>Telegram</strong>
-                    <small>@Summer1444</small>
+                    <small>T.me/creatoryona</small>
                   </span>
                 </a>
 
@@ -322,23 +330,23 @@ export default async function HomePage() {
               </p>
 
               <a
-                href="https://wa.me/251925792929"
+                href="https://wa.me/251963574435"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bm-footer-contact-link"
               >
                 <strong>WhatsApp</strong>
-                <span>+251 925 792 929</span>
+                <span>+251 963 574 435</span>
               </a>
 
               <a
-                href="https://t.me/Summer1444"
+                href="https://t.me/creatoryona"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bm-footer-contact-link"
               >
                 <strong>Telegram</strong>
-                <span>@Summer1444</span>
+                <span>T.me/creatoryona</span>
               </a>
 
             </div>
@@ -363,5 +371,6 @@ export default async function HomePage() {
       </footer>
 
     </main>
+    </AuthGate>
   )
 }

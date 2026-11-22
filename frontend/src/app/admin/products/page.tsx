@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { getAdminProducts, deleteProduct } from "@/lib/api"
+import { getAdminProducts, deleteProduct } from "@/lib/admin-api"
+import { getFullImageUrl } from "@/lib/image-url"
 
 type Variant = {
   id: number
@@ -121,6 +122,14 @@ export default function AdminProductsPage() {
             </div>
 
             <div className="products-header-actions">
+              <Link
+                href="/admin"
+                className="products-refresh-button"
+                style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "4px" }}
+              >
+                ← Back to Dashboard
+              </Link>
+
               <button
                 type="button"
                 className="products-refresh-button"
@@ -206,12 +215,25 @@ export default function AdminProductsPage() {
                 <div className="admin-product-card-image">
                   {product.image ? (
                     <img
-                      src={product.image}
+                      src={getFullImageUrl(product.image)}
                       alt={product.name}
+                      onError={(e) => {
+                        // Hide broken image and reveal styled fallback
+                        const target = e.currentTarget
+                        target.style.display = "none"
+                        const parent = target.parentElement
+                        if (parent && !parent.querySelector(".product-no-image")) {
+                          const fallback = document.createElement("div")
+                          fallback.className = "product-no-image"
+                          fallback.innerHTML = `<span>📦</span><small>No Image</small>`
+                          parent.appendChild(fallback)
+                        }
+                      }}
                     />
                   ) : (
                     <div className="product-no-image">
-                      No Image
+                      <span>📦</span>
+                      <small>No Image</small>
                     </div>
                   )}
 

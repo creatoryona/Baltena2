@@ -1,6 +1,6 @@
-﻿const API_URL =
+const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:3000"
+  "http://localhost:4000"
 
 export async function customerLogin(
   email: string,
@@ -154,4 +154,71 @@ export function getCustomerToken() {
 
 export function isCustomerLoggedIn() {
   return Boolean(getCustomerToken())
+}
+
+export async function getCustomerOrders() {
+  const token = getCustomerToken()
+  if (!token) return []
+
+  const response = await fetch(`${API_URL}/orders/my-orders`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    cache: "no-store",
+  })
+
+  if (!response.ok) {
+    throw new Error("Failed to load your orders")
+  }
+
+  return response.json()
+}
+
+export async function updateCustomerProfile(data: { name: string; email: string }) {
+  const token = getCustomerToken()
+  if (!token) throw new Error("Please log in first")
+
+  const response = await fetch(`${API_URL}/admin/auth/customer/profile`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  })
+
+  const resData = await response.json().catch(() => null)
+  if (!response.ok) {
+    throw new Error(resData?.message || "Failed to update profile")
+  }
+
+  if (resData?.customer) {
+    localStorage.setItem("baltena_customer", JSON.stringify(resData.customer))
+  }
+
+  return resData
+}
+
+export async function changeCustomerPassword(data: {
+  currentPassword: string
+  newPassword: string
+}) {
+  const token = getCustomerToken()
+  if (!token) throw new Error("Please log in first")
+
+  const response = await fetch(`${API_URL}/admin/auth/customer/change-password`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  })
+
+  const resData = await response.json().catch(() => null)
+  if (!response.ok) {
+    throw new Error(resData?.message || "Failed to change password")
+  }
+
+  return resData
 }

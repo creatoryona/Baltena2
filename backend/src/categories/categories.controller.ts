@@ -1,4 +1,4 @@
-﻿import {
+import {
   Body,
   Controller,
   Delete,
@@ -35,6 +35,7 @@ export class CategoriesController {
     body: {
       name: string
       slug: string
+      image?: string
     },
   ) {
     return this.categoriesService.create(body)
@@ -48,6 +49,7 @@ export class CategoriesController {
     body: {
       name?: string
       slug?: string
+      image?: string
     },
   ) {
     return this.categoriesService.update(id, body)

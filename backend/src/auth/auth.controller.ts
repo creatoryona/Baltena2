@@ -1,9 +1,14 @@
 import {
   Body,
   Controller,
+  Patch,
   Post,
+  Req,
+  UseGuards,
 } from "@nestjs/common"
 import { AuthService } from "./auth.service.js"
+import { CustomerAuthGuard } from "./customer-auth.guard.js"
+import type { AuthRequest } from "./customer-auth.guard.js"
 
 @Controller("admin/auth")
 export class AuthController {
@@ -56,5 +61,27 @@ export class AuthController {
       body.email,
       body.password,
     )
+  }
+
+  // Customer update profile
+  @Patch("customer/profile")
+  @UseGuards(CustomerAuthGuard)
+  updateProfile(
+    @Req() req: AuthRequest,
+    @Body() body: { name: string; email: string },
+  ) {
+    const customerId = req.user!.sub
+    return this.authService.updateProfile(customerId, body)
+  }
+
+  // Customer change password
+  @Patch("customer/change-password")
+  @UseGuards(CustomerAuthGuard)
+  changePassword(
+    @Req() req: AuthRequest,
+    @Body() body: { currentPassword: string; newPassword: string },
+  ) {
+    const customerId = req.user!.sub
+    return this.authService.changePassword(customerId, body)
   }
 }

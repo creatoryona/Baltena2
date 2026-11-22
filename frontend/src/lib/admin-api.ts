@@ -1,5 +1,5 @@
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
 function getToken() {
   if (typeof window === "undefined") return ""
@@ -65,7 +65,17 @@ export async function adminLogin(
     throw new Error("Login succeeded but no token was returned")
   }
 
+  if (data?.role !== "admin") {
+    throw new Error("This account is not an admin account")
+  }
+
+  localStorage.removeItem("baltena_customer_token")
+  localStorage.removeItem("baltena_customer")
   localStorage.setItem("baltena_admin_token", token)
+
+  if (data?.admin) {
+    localStorage.setItem("baltena_admin", JSON.stringify(data.admin))
+  }
 
   return data
 }
@@ -102,7 +112,7 @@ export async function getAdminProducts() {
   return adminRequest("/products")
 }
 
-export async function getAdminProduct(id: string) {
+export async function getAdminProduct(id: number | string) {
   return adminRequest(`/products/${id}`)
 }
 
@@ -120,7 +130,7 @@ export async function createProduct(data: {
 }
 
 export async function updateProduct(
-  id: string,
+  id: number | string,
   data: {
     name?: string
     slug?: string
@@ -135,7 +145,7 @@ export async function updateProduct(
   })
 }
 
-export async function deleteProduct(id: string) {
+export async function deleteProduct(id: number | string) {
   return adminRequest(`/products/${id}`, {
     method: "DELETE",
   })
@@ -190,6 +200,7 @@ export async function getCategories() {
 export async function createCategory(data: {
   name: string
   slug: string
+  image?: string
 }) {
   return adminRequest("/categories", {
     method: "POST",
@@ -202,6 +213,7 @@ export async function updateCategory(
   data: {
     name?: string
     slug?: string
+    image?: string
   }
 ) {
   return adminRequest(`/categories/${id}`, {

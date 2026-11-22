@@ -1,45 +1,65 @@
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
-export async function getProducts() {
-  const response = await fetch(`${API_URL}/products`, {
-    cache: "no-store",
-  })
+export async function getProducts(categorySlug?: string, search?: string) {
+  try {
+    const params = new URLSearchParams()
+    if (categorySlug) params.append("category", categorySlug)
+    if (search?.trim()) params.append("search", search.trim())
 
-  if (!response.ok) {
-    throw new Error("Failed to load products")
+    const queryStr = params.toString()
+    const url = queryStr ? `${API_URL}/products?${queryStr}` : `${API_URL}/products`
+
+    const response = await fetch(url, {
+      cache: "no-store",
+    })
+
+    if (!response.ok) {
+      return []
+    }
+
+    return response.json()
+  } catch {
+    return []
   }
-
-  return response.json()
 }
 
 export async function getProduct(id: string) {
-  const response = await fetch(`${API_URL}/products/${id}`, {
-    cache: "no-store",
-  })
+  try {
+    const response = await fetch(`${API_URL}/products/${id}`, {
+      cache: "no-store",
+    })
 
-  if (!response.ok) {
-    throw new Error("Product not found")
+    if (!response.ok) {
+      return null
+    }
+
+    return response.json()
+  } catch {
+    return null
   }
-
-  return response.json()
 }
 
 export async function getCategories() {
-  const response = await fetch(`${API_URL}/categories`, {
-    cache: "no-store",
-  })
+  try {
+    const response = await fetch(`${API_URL}/categories`, {
+      cache: "no-store",
+    })
 
-  if (!response.ok) {
-    throw new Error("Failed to load categories")
+    if (!response.ok) {
+      return []
+    }
+
+    return response.json()
+  } catch {
+    return []
   }
-
-  return response.json()
 }
 
 export async function createOrder(data: {
   customerName: string
   phone: string
+  customerId?: number
   region?: string
   city?: string
   subCity?: string
@@ -52,11 +72,22 @@ export async function createOrder(data: {
     quantity: number
   }[]
 }) {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("baltena_customer_token")
+      : null
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  }
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`
+  }
+
   const response = await fetch(`${API_URL}/orders`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify(data),
   })
 
@@ -69,49 +100,4 @@ export async function createOrder(data: {
   }
 
   return result
-}
-
-export async function deleteProduct(id: number) {
-  const token = localStorage.getItem("baltena_admin_token")
-
-  const response = await fetch(
-    `${API_URL}/products/${id}`,
-    {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  )
-
-  if (!response.ok) {
-    const text = await response.text()
-
-    throw new Error(
-      text || "Failed to delete product"
-    )
-  }
-
-  return response.json()
-}
-
-export async function getAdminProducts() {
-  const token = localStorage.getItem("baltena_admin_token")
-
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/products`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      cache: "no-store",
-    }
-  )
-
-  if (!response.ok) {
-    const text = await response.text()
-    throw new Error(text || "Failed to load admin products")
-  }
-
-  return response.json()
 }
